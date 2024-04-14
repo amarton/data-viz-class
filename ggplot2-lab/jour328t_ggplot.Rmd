@@ -170,3 +170,17 @@ ggplot(spotify_tree_data, aes(area = count_by_key, fill = key, label = count_by_
 
 ```
 
+
+Time to work on your own! Use the spotify data and the code we reviewed above to create the following three graphics:
+
+1.Make a bar chart of the top 10 tracks, similar to the chart we made above. Instead of the track name, show the artist name. Write new headline and chatter and change the color and theme.
+
+2. Make a scatterplot simiar to the chart we made above. Instead of energy and danceability, choose two different metrics from the data to compare. Write new text and update the colors and theme.
+
+3. Make another chart using this data, anything you like.
+
+
+
+When finished, save and submit this R Markdown file to ELMS.
+
+
