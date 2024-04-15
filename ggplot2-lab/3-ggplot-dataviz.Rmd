@@ -10,6 +10,7 @@ author: "Adam Marton"
 ```{r}
 install.packages("treemapify")
 install.packages("RColorBrewer")
+install.packages('svglite')
 ```
 
 
@@ -19,6 +20,8 @@ library(tidyverse)
 library(scales)
 library(treemapify)
 library(RColorBrewer)
+library(svglite)
+
 ```
 
 
@@ -174,6 +177,26 @@ ggplot(spotify_tree_data, aes(area = count_by_key, fill = key, label = count_by_
     scale_fill_brewer(palette = "Paired")
 
 ```
+
+
+EXPORT -- you can export your ggplot graphics to PNG or SVG
+```{r}
+
+spotify_tree_graph <- ggplot(spotify_tree_data, aes(area = count_by_key, fill = key, label = count_by_key)) +
+  geom_treemap() +
+      theme_minimal() +
+   labs(title = "Top Spotify songs by key", subtitle = "Examining the top Spotify songs of 2023", caption = "Source: Spotify via Kaggle \n by Adam Marton", color = "Key")+
+  geom_treemap_text(colour = "white",
+                    place = "centre",
+                    size = 15)+
+    scale_fill_brewer(palette = "Paired")
+
+spotify_tree_graph = ggsave(file="tree.svg")
+spotify_tree_graph = ggsave(file="tree.png")
+
+```
+
+
 
 
 Time to work on your own! Use the spotify data and the code we reviewed above to create the following three graphics:
