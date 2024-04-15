@@ -3,6 +3,15 @@ title: "Intro to GGplot"
 author: "Adapted from R2: Visualizing data NICAR 2023 by Olga Pierce" 
 ---
 
+
+
+Install one new package
+```{r}
+install.packages("scales")
+
+```
+
+
 #### Load packages
 ```{r}
 library(tidyverse)
@@ -18,6 +27,8 @@ data <- babynames
 ### What is ggplot2?
 
 The package ggplot2 allows us to create a number of visualizations with tremendous flexibility and customization.  Because it is open source, its capabilities are expanded all the time by a community around the world.
+
+More info: https://ggplot2.tidyverse.org/
 
 ### ggplot examples
 
@@ -42,11 +53,17 @@ data %>% ggplot()
 ```
 
 Now let's add x and y dimensions to our canvas.
+
+( aes is short for "Aesthetic": In ggplot2 , aesthetic means “something you can see”. Each aesthetic is a mapping between a visual cue and a variable. Examples include: position (i.e., on the x and y axes) )
+
 ```{r}
 bar_chart_data %>% ggplot(aes(x = name, y = n)) 
 ```
 
 Now we need to add something called a 'geom'. This determines what kind of chart will get added to our canvas.
+
+( Geom: The geometric objects in ggplot2 are visual structures that are used to visualize data. They can be lines, bars, points, and so on. Geometric objects are constructed from datasets. )
+
 ```{r}
 bar_chart_data %>% ggplot(aes(x = name, y = n)) +
   geom_col()
@@ -71,10 +88,14 @@ bar_chart_data %>% ggplot(aes(x = reorder(name,desc(n)), y = n)) +
 
 Looking better, but I don't love the y-axis. Let's add commas to the tick mark labels.
 
+
 ```{r}
 bar_chart_data %>% ggplot(aes(x = reorder(name,desc(n)), y = comma(n))) +
   geom_col(fill = "cadetblue", alpha = .8)
 ```
+(ggplot function reference: https://ggplot2.tidyverse.org/reference/index.html)
+
+
 
 Now let's get rid of that ugly background, those axis labels, and add a title to our chart.
 
@@ -85,6 +106,9 @@ bar_chart_data %>% ggplot(aes(x = reorder(name,desc(n)), y = comma(n))) +
   theme_minimal() +
   theme(axis.title = element_blank())
 ```
+(ggplot themes: https://ggplot2.tidyverse.org/reference/ggtheme.html)
+
+
 
 We can even layer geoms.
 
@@ -99,6 +123,12 @@ bar_chart_data %>% ggplot(aes(x = reorder(name,desc(n)), y = comma(n))) +
         panel.grid.minor = element_blank()) +
 geom_text(aes(label = comma(n)), vjust = -0.5)
 ```
+How did we figure out how to modify the theme?
+1. Documentation
+2. Google
+3. ChatGPT
+
+
 
 Some of these are characterized as male names and some as female.  What if we want to color code them?
 
