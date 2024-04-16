@@ -80,10 +80,13 @@ Let's calculate the total number of baby names in our dataset. Use `summarise()`
 babynames_data %>% summarise(total_names = sum(n))
 ```
 Another common summary statistics we use in data analysis is the count of values, or the number of rows in a table. The function for counting rows in R is `n()`, and doesn't require any arguments:
+
+Note: n() shows the number of observations in the current group.
 ```{r}
 babynames_data %>% summarise(num_rows = n())
 ```
 This isn't super helpful for our babynames data, as many names are repeated across the table since they are used from year to year. But we can string together two functions and determine, for example, how many unique names were given in 2017:
+
 ```{r}
 babynames_data %>% filter(year==2017) %>% summarise(unique_names_2017 = n())
 ```
@@ -102,5 +105,6 @@ babynames_data %>% group_by(year) %>% summarise(unique_names = n()) %>% arrange(
 ```
 *Your turn!* Taking all that you know about piping and functions so far, can you find the name given to the most female babies across all years?  
 ```{r}
+
 
 ```
