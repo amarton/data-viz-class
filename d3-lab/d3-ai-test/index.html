@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agency Vendor Payment Visualization</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+    }
+    select {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      min-width: 300px;
+    }
+    .chart-container {
+      position: relative;
+      height: 500px;
+      overflow-y: auto;
+    }
+    .bar {
+      fill: #4682b4;
+      transition: fill 0.3s;
+    }
+    .bar:hover {
+      fill: #2E5984;
+    }
+    .axis text {
+      font-size: 12px;
+    }
+    .axis-label {
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .tooltip {
+      position: absolute;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .summary {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      border-left: 4px solid #4682b4;
+    }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100px;
+      font-style: italic;
+      color: #666;
+    }
+    .no-data {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 300px;
+      font-style: italic;
+      color: #666;
+    }
+    .filter-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    input[type="number"] {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      width: 150px;
+    }
+    .button {
+      background-color: #4682b4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .button:hover {
+      background-color: #2E5984;
+    }
+    .data-note {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Maryland State Agency Vendor Payments</h1>
+    
+    <div class="controls">
+      <div>
+        <label for="agency-select">Select an Agency: </label>
+        <select id="agency-select">
+          <option value="">Select an agency...</option>
+        </select>
+      </div>
+      
+      <div class="filter-controls">
+        <label for="filter-amount">Minimum Amount: $</label>
+        <input type="number" id="filter-amount" min="0" value="0">
+        <button id="apply-filter" class="button">Apply Filter</button>
+      </div>
+    </div>
+    
+    <div class="data-note">
+      <strong>Note:</strong> This visualization is using embedded sample data based on the structure of the vendors.csv file.
+    </div>
+    
+    <div id="summary" class="summary" style="display: none;">
+      <h3 id="summary-title">Summary</h3>
+      <div id="summary-content"></div>
+    </div>
+    
+    <div id="chart-container" class="chart-container" style="display: none;"></div>
+    <div id="no-data" class="no-data" style="display: none;">No vendor data available for the selected agency.</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script>
+    // Sample data based on the structure of the vendors.csv file
+    const sampleData = [
+      { agency: "DEPARTMENT OF HEALTH", payee: "UNIVERSITY OF MARYLAND MEDICAL SYSTEM", amount: 125000000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "JOHNS HOPKINS HEALTH SYSTEM", amount: 95000000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "MEDSTAR HEALTH", amount: 78000000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "LIFEBRIDGE HEALTH", amount: 45000000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "CHASE BREXTON HEALTH CARE", amount: 22500000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "KAISER PERMANENTE", amount: 18700000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "TOTAL HEALTHCARE", amount: 12400000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "FAMILY HEALTH CENTERS OF BALTIMORE", amount: 8900000 },
+      { agency: "DEPARTMENT OF HEALTH", payee: "HEALTHCARE FOR THE HOMELESS", amount: 7600000 },
+      
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "GRANITE CONSTRUCTION COMPANY", amount: 85000000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "LANE CONSTRUCTION", amount: 72000000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "FLUOR CORPORATION", amount: 63500000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "SKANSKA USA", amount: 57000000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "WAGMAN HEAVY CIVIL", amount: 42300000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "ALLAN MYERS", amount: 38700000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "G.A. & F.C. WAGMAN", amount: 31200000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "FACCHINA CONSTRUCTION", amount: 27800000 },
+      { agency: "DEPARTMENT OF TRANSPORTATION", payee: "CONCRETE GENERAL INC", amount: 19500000 },
+      
+      { agency: "DEPARTMENT OF EDUCATION", payee: "PEARSON EDUCATION", amount: 48700000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "MCGRAW-HILL EDUCATION", amount: 37900000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "SCHOLASTIC INC", amount: 25600000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "HOUGHTON MIFFLIN HARCOURT", amount: 22100000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "DISCOVERY EDUCATION", amount: 17800000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "RENAISSANCE LEARNING", amount: 12400000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "CURRICULUM ASSOCIATES", amount: 9800000 },
+      { agency: "DEPARTMENT OF EDUCATION", payee: "FOLLETT SCHOOL SOLUTIONS", amount: 7500000 },
+      
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "MOTOROLA SOLUTIONS", amount: 67800000 },
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "AXON ENTERPRISE", amount: 45200000 },
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "HARRIS CORPORATION", amount: 38900000 },
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "CORRECTIONAL MEDICAL SERVICES", amount: 32700000 },
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "CORIZON HEALTH", amount: 28500000 },
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "GEO GROUP", amount: 23100000 },
+      { agency: "DEPARTMENT OF PUBLIC SAFETY", payee: "MANAGEMENT & TRAINING CORP", amount: 18700000 },
+      
+      { agency: "DEPARTMENT OF HOUSING", payee: "HABITAT FOR HUMANITY", amount: 34500000 },
+      { agency: "DEPARTMENT OF HOUSING", payee: "BRIDGE HOUSING CORP", amount: 29700000 },
+      { agency: "DEPARTMENT OF HOUSING", payee: "COMMUNITY PRESERVATION PARTNERS", amount: 24300000 },
+      { agency: "DEPARTMENT OF HOUSING", payee: "RELATED COMPANIES", amount: 19800000 },
+      { agency: "DEPARTMENT OF HOUSING", payee: "MERCY HOUSING", amount: 17200000 },
+      { agency: "DEPARTMENT OF HOUSING", payee: "ENTERPRISE COMMUNITY PARTNERS", amount: 14600000 }
+    ];
+
+    // Function to format currency
+    const formatCurrency = d3.format("$,.0f");
+
+    // Function to format large numbers
+    const formatNumber = d3.format(",.0f");
+
+    // Function to populate the agency dropdown
+    function populateAgencyDropdown(data) {
+      const agencies = [...new Set(data.map(d => d.agency))].sort();
+      
+      const dropdown = d3.select("#agency-select")
+        .on("change", updateChart);
+      
+      dropdown.selectAll("option").remove();
+      
+      dropdown.append("option")
+        .attr("value", "")
+        .text("Select an agency...");
+      
+      dropdown.selectAll("option.agency-option")
+        .data(agencies)
+        .enter()
+        .append("option")
+        .attr("class", "agency-option")
+        .attr("value", d => d)
+        .text(d => d);
+    }
+
+    // Function to create/update the chart
+    function updateChart() {
+      const selectedAgency = d3.select("#agency-select").property("value");
+      const minAmount = +d3.select("#filter-amount").property("value");
+      
+      if (!selectedAgency) {
+        d3.select("#chart-container").style("display", "none");
+        d3.select("#summary").style("display", "none");
+        d3.select("#no-data").style("display", "none");
+        return;
+      }
+      
+      let filteredData = sampleData.filter(d => d.agency === selectedAgency);
+      
+      // Apply minimum amount filter if set
+      if (minAmount > 0) {
+        filteredData = filteredData.filter(d => d.amount >= minAmount);
+      }
+      
+      if (filteredData.length === 0) {
+        d3.select("#chart-container").style("display", "none");
+        d3.select("#summary").style("display", "none");
+        d3.select("#no-data").style("display", "flex");
+        return;
+      }
+      
+      // Sort by amount descending
+      filteredData.sort((a, b) => b.amount - a.amount);
+      
+      // Show chart container and hide no data message
+      d3.select("#chart-container").style("display", "block");
+      d3.select("#no-data").style("display", "none");
+      
+      // Clear existing chart
+      d3.select("#chart-container").selectAll("*").remove();
+      
+      // Remove any existing tooltips
+      d3.selectAll(".tooltip").remove();
+      
+      // Set up dimensions
+      const margin = {top: 30, right: 30, bottom: 80, left: 250};
+      const width = d3.select("#chart-container").node().getBoundingClientRect().width - margin.left - margin.right;
+      const height = Math.max(500, filteredData.length * 40) - margin.top - margin.bottom;
+      
+      // Create SVG
+      const svg = d3.select("#chart-container")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+      
+      // Create scales
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(filteredData, d => d.amount)])
+        .range([0, width]);
+      
+      const y = d3.scaleBand()
+        .domain(filteredData.map(d => d.payee))
+        .range([0, height])
+        .padding(0.2);
+      
+      // Create axes
+      svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).ticks(5).tickFormat(formatCurrency))
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em")
+        .attr("transform", "rotate(-45)");
+      
+      svg.append("g")
+        .attr("class", "y axis")
+        .call(d3.axisLeft(y));
+      
+      // Add X axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("text-anchor", "middle")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 10)
+        .text("Amount ($)");
+      
+      // Create tooltip
+      const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+      
+      // Create bars
+      svg.selectAll(".bar")
+        .data(filteredData)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("y", d => y(d.payee))
+        .attr("height", y.bandwidth())
+        .attr("x", 0)
+        .attr("width", 0) // Start at 0 for animation
+        .transition()
+        .duration(800)
+        .attr("width", d => x(d.amount));
+      
+      // Add event listeners for tooltips (separate from transition)
+      svg.selectAll(".bar-overlay")
+        .data(filteredData)
+        .enter()
+        .append("rect")
+        .attr("class", "bar-overlay")
+        .attr("y", d => y(d.payee))
+        .attr("height", y.bandwidth())
+        .attr("x", 0)
+        .attr("width", d => x(d.amount))
+        .attr("fill", "transparent")
+        .on("mouseover", function(event, d) {
+          // Highlight the corresponding bar
+          d3.select(this.parentNode)
+            .selectAll(".bar")
+            .filter((bd, i) => i === filteredData.indexOf(d))
+            .attr("fill", "#2E5984");
+            
+          tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+            
+          tooltip.html(`<strong>${d.payee}</strong><br>Amount: ${formatCurrency(d.amount)}`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(event, d) {
+          // Reset bar color
+          d3.select(this.parentNode)
+            .selectAll(".bar")
+            .filter((bd, i) => i === filteredData.indexOf(d))
+            .attr("fill", "#4682b4");
+            
+          tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
+      
+      // Update summary information
+      const totalAmount = d3.sum(filteredData, d => d.amount);
+      const avgAmount = totalAmount / filteredData.length;
+      const maxVendor = filteredData[0];
+      
+      d3.select("#summary").style("display", "block");
+      d3.select("#summary-title").text(`Summary: ${selectedAgency}`);
+      
+      d3.select("#summary-content").html(`
+        <p><strong>Total Vendors:</strong> ${formatNumber(filteredData.length)}</p>
+        <p><strong>Total Amount:</strong> ${formatCurrency(totalAmount)}</p>
+        <p><strong>Average Payment:</strong> ${formatCurrency(avgAmount)}</p>
+        <p><strong>Largest Vendor:</strong> ${maxVendor.payee} (${formatCurrency(maxVendor.amount)})</p>
+      `);
+    }
+
+    // Add event listener for filter button
+    d3.select("#apply-filter").on("click", updateChart);
+
+    // Initialize visualization by loading the sample data
+    populateAgencyDropdown(sampleData);
+  </script>
+</body>
+</html>
